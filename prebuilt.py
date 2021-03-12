@@ -88,6 +88,37 @@ allprojects {
 def _ModifyNativeLibrariesFolderName():
   os.system('''mv chrome/android/chrome_public_apk/symlinked-libs/armeabi chrome/android/chrome_public_apk/symlinked-libs/arm64-v8a''')
 
+def _CopyAssets():
+  print("extracting assets")
+  os.system('''rm -rf assets && mkdir -p assets''')
+  os.system('''cp ../apks/ChromePublic.apk assets/''')
+  os.system('''mv assets/ChromePublic.apk assets/ChromePublic.zip''')
+  os.system('''unzip assets/ChromePublic.zip -d assets/ChromePublic/ >/dev/null 2>&1''')
+  os.system('''cp -r assets/ChromePublic/assets/* assets/''')
+  os.system('''rm -rf assets/ChromePublic''')
+  os.system('''rm -rf assets/ChromePublic.zip''')
+
+  if not FileHelper.ContainsRegion(GRADLE_PATH, "AssetsRegion"):
+    region_content = """\t\t\t// @begin {}\n\t\t\t// @end {}\n\t""".format("AssetsRegion", "AssetsRegion")
+    FileHelper.AddTextAfter(GRADLE_PATH, region_content, lambda line: "manifest.srcFile" in line)
+
+  FileHelper.ReplaceRegion(GRADLE_PATH, "AssetsRegion", 
+"""            assets.srcDirs = [
+                "../../../assets"
+            ]
+""")
+
+  if not FileHelper.ContainsRegion(GRADLE_PATH, "AaptOptionsRegion"):
+    region_content = """\t// @begin {}\n\t// @end {}\n\t""".format("AaptOptionsRegion", "AaptOptionsRegion")
+    FileHelper.AddTextBefore(GRADLE_PATH, region_content, lambda line: "sourceSets {" in line)
+
+  FileHelper.ReplaceRegion(GRADLE_PATH, "AaptOptionsRegion", 
+"""    aaptOptions {
+        noCompress "dat", "pak", "bin"
+    }
+""")
+
+
 def main(args):
   _FixJVMHeapSpaceExhausted()
   _FixNativeLibraries()
@@ -96,6 +127,7 @@ def main(args):
   _FixR()
   _SetOutputAsLibrary()
   _ModifyNativeLibrariesFolderName()
+  _CopyAssets()
 
   ProcessDependencies(env)
   ProcessR(env)

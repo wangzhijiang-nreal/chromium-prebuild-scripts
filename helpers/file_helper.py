@@ -41,6 +41,19 @@ def AddTextBefore(file_path, text, match_fn):
           fout.write(line)
   shutil.move(file_path_t, file_path)
 
+def AddTextAfter(file_path, text, match_fn):
+  file_path_t = file_path + ".tmp"
+
+  with open(file_path,'r') as fin:
+    with open(file_path_t,'w') as fout:
+      for line in fin:
+        if match_fn(line):
+          fout.write(line)
+          fout.write(text + os.linesep)
+        else:
+          fout.write(line)
+  shutil.move(file_path_t, file_path)
+
 def ContainsRegion(file_path, region_name):
   begin_tag = "// @begin {}".format(region_name)
   return ContainsLine(file_path, begin_tag)
