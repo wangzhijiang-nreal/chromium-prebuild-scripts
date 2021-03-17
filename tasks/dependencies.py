@@ -259,7 +259,7 @@ def _AddExtraDependencies(gradle_path):
                 fout.write(line_in)
         shutil.move(gradle_path_t, gradle_path)
 
-def _CommentOutDependencies(gradle_path):
+def _CommentOutDependencies(gradle_path, comment_out_dependencies_content):
   def _PrependComment(s):
     # Find start position of non-whitespace char
     offset = -1
@@ -275,7 +275,7 @@ def _CommentOutDependencies(gradle_path):
       return s
 
   gradle_path_t = gradle_path + ".tmp"    
-  comment_out_lines = g_comment_out_dependencies.splitlines()
+  comment_out_lines = comment_out_dependencies_content.splitlines()
   comment_out_lines.reverse()
   
   in_dep_block = False
@@ -314,7 +314,7 @@ def _EnableAndroidX(gradle_properties_path):
       if not FileHelper.ContainsLine(gradle_properties_path, line):
         FileHelper.AppendLine(gradle_properties_path, os.linesep + line, False)
 
-def _RemoveDuplicateJarNames(work_dir, gradle_dir, gradle_path):
+def _ResolveDuplicateJarNames(work_dir, gradle_dir, gradle_path):
 
   def _NewJarName(jar_path):
     begin = False
@@ -457,6 +457,45 @@ def _AddPlayServicesDependencies(gradle_path, region_name, extra_dependencies):
                 fout.write(extra_line + os.linesep)
   shutil.move(gradle_path_t, gradle_path)
 
+def _AddPackagingOptions(gradle_path):
+  if not FileHelper.ContainsRegion(gradle_path, "PackagingOptionsRegion"):
+    region_content = """\t// @begin {}\n\t// @end {}\n\t""".format("PackagingOptionsRegion", "PackagingOptionsRegion")
+    FileHelper.AddTextBefore(gradle_path, region_content, lambda line: "sourceSets {" in line)
+
+  FileHelper.ReplaceRegion(gradle_path, "PackagingOptionsRegion", 
+"""    packagingOptions {
+        exclude '/lib/arm64-v8a/libnr_state_provider.so'
+        exclude '/lib/arm64-v8a/libnr_nebulaspaceproxy.so'
+
+        exclude '/lib/arm64-v8a/libnr_api.so'
+        exclude '/lib/arm64-v8a/libnr_rgb_camera.so'
+    }
+""")
+
+  if not FileHelper.ContainsRegion(gradle_path, "CompileOnlyRegion"):
+    region_content = """\t// @begin {}\n\t// @end {}\n\t""".format("CompileOnlyRegion", "CompileOnlyRegion")
+    FileHelper.AddTextAfter(gradle_path, region_content, lambda line: "dependencies {" in line)
+
+  FileHelper.ReplaceRegion(gradle_path, "CompileOnlyRegion", 
+"""    compileOnly files("../../../../obj/third_party/nr_sdk/nr_api_java/libs/nrstate-provider.jar")
+    compileOnly files("../../../../obj/third_party/nr_sdk/nr_api_java/libs/nebulaspaceproxy.jar")
+
+    compileOnly files("../../../../obj/third_party/nr_sdk/nr_api_java/libs/nrcontroller.jar")
+    compileOnly files("../../../../obj/third_party/nr_sdk/nr_api_java/libs/nrdisplay.jar")
+    compileOnly files("../../../../obj/third_party/nr_sdk/nr_api_java/libs/framework.jar")
+    compileOnly files("../../../../obj/third_party/nr_sdk/nr_api_java/classes.jar")
+""")
+
+  _CommentOutDependencies(gradle_path, """
+    implementation files("../../../../obj/third_party/nr_sdk/nr_api_java/libs/nrstate-provider.jar")
+    implementation files("../../../../obj/third_party/nr_sdk/nr_api_java/libs/nebulaspaceproxy.jar")
+
+    implementation files("../../../../obj/third_party/nr_sdk/nr_api_java/libs/nrcontroller.jar")
+    implementation files("../../../../obj/third_party/nr_sdk/nr_api_java/libs/nrdisplay.jar")
+    implementation files("../../../../obj/third_party/nr_sdk/nr_api_java/libs/framework.jar")
+    implementation files("../../../../obj/third_party/nr_sdk/nr_api_java/classes.jar")
+""")
+
 def Process(env):
   print("[dependencies] start")
 
@@ -467,9 +506,11 @@ def Process(env):
   gradle_properties_path = os.path.abspath(os.path.join(project_dir, "gradle.properties"))
 
   _AddExtraDependencies(gradle_path)
-  _CommentOutDependencies(gradle_path)
+  _CommentOutDependencies(gradle_path, g_comment_out_dependencies)
   _EnableAndroidX(gradle_properties_path)
-  _RemoveDuplicateJarNames(work_dir, gradle_dir, gradle_path)
+  _AddPackagingOptions(gradle_path)
+  _ResolveDuplicateJarNames(work_dir, gradle_dir, gradle_path)
 
   _AddPlayServicesDependencies(gradle_path, "PlayServices", g_play_services_dependencies)
+  
   
