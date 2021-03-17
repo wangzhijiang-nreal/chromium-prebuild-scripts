@@ -28,6 +28,10 @@ Run prebuilt.py task before building gradle project
     $ cd out/Default/nreal
     $ git clone <git-url> scripts
     $ python scripts/prebuilt.py
+    
+### Use custom package name
+
+Enter //chrome/android/BUILD.gn and modify *_default_package*.
 
 ### How to use chromium library?
 
