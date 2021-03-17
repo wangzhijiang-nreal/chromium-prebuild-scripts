@@ -14,12 +14,20 @@ Make sure you have followed [android build instructions](https://chromium.google
     dcheck_always_on = true
     disable_android_lint = true
     enable_nacl = false
+    
+    $ autoninja -C out/Default chrome_public_apk
 
 Generate gradle project:
 
     $ build/android/gradle/generate_gradle.py --output-directory out/Debug \
         --target //chrome/android:chrome_public_apk \
-        --project-dir out/Debug/nreal
+        --project-dir out/Default/nreal
+        
+Run prebuilt.py task before building gradle project
+
+    $ cd out/Default/nreal
+    $ git clone <git-url> scripts
+    $ python scripts/prebuilt.py
 
 ### How to use chromium library?
 
