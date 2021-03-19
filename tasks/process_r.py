@@ -190,6 +190,43 @@ java_srcdirs = [
   "../../../../../../third_party/gif_player/src",
   "../../../../../../url/android/java/src",
   "../../../../../../ui/android/java/src",
+
+  "../../../../gen/chrome/android/app_hooks_java/generated_java",
+  "../../../../gen/chrome/android/chrome_java/generated_java",
+  "../../../../gen/chrome/android/chrome_public_apk/generated_java",
+  "../../../../gen/chrome/android/critical_persisted_tab_data_proto_java/generated_java",
+  "../../../../gen/chrome/android/features/dev_ui/java/generated_java",
+  "../../../../gen/chrome/android/features/dev_ui/public/java/generated_java",
+  "../../../../gen/chrome/android/features/keyboard_accessory/factory/internal_java/generated_java",
+  #"../../../../gen/chrome/android/features/keyboard_accessory/factory/public_java/chrome/android/features/keyboard_accessory/factory/java/src",
+  "../../../../gen/chrome/android/features/keyboard_accessory/factory/public_java/generated_java",
+  "../../../../gen/chrome/android/features/keyboard_accessory/internal/internal_java/generated_java",
+  "../../../../gen/chrome/android/features/keyboard_accessory/public/public_java/generated_java",
+  "../../../../gen/chrome/android/features/media_router/java/generated_java",
+  "../../../../gen/chrome/android/features/start_surface/internal/java/generated_java",
+  "../../../../gen/chrome/android/features/tab_ui/java/generated_java",
+  "../../../../gen/chrome/android/features/tab_ui/module_desc_java/generated_java",
+  "../../../../gen/chrome/android/features/vr/java/generated_java",
+  "../../../../gen/chrome/android/modules/cablev2_authenticator/public/java/generated_java",
+  "../../../../gen/chrome/android/modules/chime/public/java/generated_java",
+  "../../../../gen/chrome/android/modules/dev_ui/provider/java/generated_java",
+  "../../../../gen/chrome/android/modules/extra_icu/provider/java/generated_java",
+  "../../../../gen/chrome/android/modules/extra_icu/public/java/generated_java",
+  "../../../../gen/chrome/android/modules/image_editor/provider/java/generated_java",
+  "../../../../gen/chrome/android/modules/image_editor/public/java/generated_java",
+  "../../../../gen/chrome/android/modules/stack_unwinder/provider/java/generated_java",
+  "../../../../gen/chrome/android/modules/stack_unwinder/public/java/generated_java",
+  "../../../../gen/chrome/android/modules/test_dummy/provider/java/generated_java",
+  "../../../../gen/chrome/android/modules/test_dummy/public/java/generated_java",
+  "../../../../gen/chrome/android/partner_location_descriptor_proto_java/generated_java",
+  "../../../../gen/chrome/android/templates",
+  "../../../../gen/chrome/android/third_party/compositor_animator/compositor_animator_java/generated_java",
+  "../../../../gen/chrome/android/update_proto_java/generated_java",
+  "../../../../gen/chrome/android/usage_stats_proto_java/generated_java",
+  "../../../../gen/chrome/android/webapk/libs/client/client_java/generated_java",
+  "../../../../gen/chrome/android/webapk/libs/common/common_java/generated_java",
+  "../../../../gen/chrome/android/webapk/libs/common/splash_java/generated_java",
+  "../../../../gen/chrome/android/webapk/libs/runtime_library/webapk_service_aidl_java/generated_java",
 ]
 
 test_java_srcdirs = [
@@ -211,7 +248,12 @@ def _NewCollectionName(srcdir):
         name += c
   return name
 
-def _ReplaceRJavaPackageName(dstdir):
+def _ReplaceRJavaPackageName(dstdir, package_name):
+  r_class_name = "{package_name}.R".format(package_name = package_name)
+  import_clause = "import {package_name}.R;".format(package_name = package_name)
+  import_clause_search_pattern = r"import\s+({package_name}.*\.R)([^a-zA-Z0-9_]|$)"
+  import_clause_search_pattern = import_clause_search_pattern.format(package_name = package_name.replace(".", r"\."))
+
   for root, dirs, files in os.walk(dstdir, topdown=False):
     for name in files:
       filename = os.path.join(root, name)
@@ -219,14 +261,15 @@ def _ReplaceRJavaPackageName(dstdir):
       with open(filename,'r') as fin:
         with open(tmpname, "w") as fout:
           for line in fin:
-            line_ = re.sub(r"(org\.chromium.*\.R)([^a-zA-Z0-9_]|$)", lambda m: "org.chromium.chrome.R" + m.group(2), line)
+            line_ = re.sub(r"(org\.chromium.*\.R)([^a-zA-Z0-9_]|$)", lambda m: r_class_name + m.group(2), line)
             fout.write(line_)
       shutil.move(tmpname, filename)
 
+      # Add import clause
       has_import_clause = False
       with open(filename, 'r') as f:
         for line in f:
-          if re.search(r"import\s+(org\.chromium.*\.R)([^a-zA-Z0-9_]|$)", line):
+          if re.search(import_clause_search_pattern, line):
             has_import_clause = True
 
       if not has_import_clause:
@@ -236,7 +279,7 @@ def _ReplaceRJavaPackageName(dstdir):
               if not has_import_clause:
                 if re.search(r"package\s+", line):
                   fout.write(line)
-                  fout.write("import org.chromium.chrome.R;" + os.linesep)
+                  fout.write(import_clause + os.linesep)
                   has_import_clause = True
               else:
                 fout.write(line)
@@ -282,6 +325,7 @@ def Process(env):
   java_collections_dir = env["JAVA_COLLECTIONS_DIR"]
   gradle_dir = env["GRADLE_DIR"]
   gradle_path = env["GRADLE_PATH"]
+  package_name = env["PACKAGE_NAME"]
 
   if os.path.exists(java_collections_dir):
     shutil.rmtree(java_collections_dir)
@@ -294,7 +338,7 @@ def Process(env):
     dstdir = os.path.abspath(os.path.join(java_collections_dir, _NewCollectionName(srcdir)))
     shutil.copytree(srcdir_, dstdir)
 
-    _ReplaceRJavaPackageName(dstdir)
+    _ReplaceRJavaPackageName(dstdir, package_name)
 
     dstdir_r = os.path.relpath(dstdir, gradle_dir)
     _ReplaceJavaSrcDir(gradle_path, srcdir, dstdir_r)

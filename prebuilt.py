@@ -10,6 +10,7 @@ from tasks.process_resource import Process as ProcessResource
 from tasks.process_java import Process as ProcessJava
 
 
+PACKAGE_NAME = "ai.nreal.chromium"
 SCRIPT_PATH = os.path.realpath(__file__)
 SCRIPT_DIR = os.path.dirname(SCRIPT_PATH)
 WORK_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
@@ -30,6 +31,7 @@ env = {
   "JAVA_COLLECTIONS_DIR" : os.path.abspath(os.path.join(WORK_DIR, "java_collections")),
   "PROJ_GRADLE_PATH" : PROJ_GRADLE_PATH,
   "PROJECT_DIR" : WORK_DIR,
+  "PACKAGE_NAME" : PACKAGE_NAME,
 }
 
 def _FixJVMHeapSpaceExhausted():
