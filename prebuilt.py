@@ -8,6 +8,7 @@ from tasks.dependencies import Process as ProcessDependencies
 from tasks.process_r import Process as ProcessR
 from tasks.process_resource import Process as ProcessResource
 from tasks.process_java import Process as ProcessJava
+from tasks.process_manifest import Process as ProcessManifest
 
 
 PACKAGE_NAME = "ai.nreal.chromium"
@@ -135,6 +136,7 @@ def main(args):
   ProcessR(env)
   ProcessResource(env)
   ProcessJava(env)
+  ProcessManifest(env)
 
 if __name__ == "__main__":
   main(sys.argv[1:])

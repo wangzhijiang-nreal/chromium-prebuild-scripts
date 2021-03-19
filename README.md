@@ -31,7 +31,16 @@ Run prebuilt.py task before building gradle project
     
 ### Use custom package name
 
-Enter //chrome/android/BUILD.gn and modify *_default_package*.
+1. Enter //chrome/android/BUILD.gn and modify *_default_package*.
+2. Update ChromeBrowserProvider.java 
+
+    private static String contextGetPackageName() {
+        return "ai.nreal.chromium"; // package name
+    }
+
+3. Update prebuilt.py
+
+    PACKAGE_NAME = "ai.nreal.chromium"
 
 ### How to use chromium library?
 
